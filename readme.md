@@ -12,6 +12,8 @@ This script is designed for scraping and parsing conversation data from Tidio.
 get key from page https://www.tidio.com/panel/inbox/conversations/solved/ with 
 web developer tool when click "Export transcript to .CSV" 
 
+must install chromium driver
+
 ## create venv 
 ```
 python -m venv venv
