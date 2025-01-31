@@ -8,7 +8,7 @@ def collect_data_from_tidio(config):
     login.login_to_tidio(config, driver)
     conversation_elements = conversation.collect_conversation_solved_elements_from_tidio(config, driver)
     hrefs = conversation.get_conversation_hrefs(conversation_elements)
-    conversation.download_conversations_data_from_tidio(config, hrefs)
+    conversation.download_conversations_data_from_tidio(config, hrefs, driver)
     swebdriver.close_driver(driver)
 
 if __name__ == '__main__':

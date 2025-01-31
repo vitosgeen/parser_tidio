@@ -65,3 +65,6 @@ class Config:
     def get_user_download_dir(self):
         return self.USER_DOWNLOAD_DIR
     
+    def get_cookie_str(self):
+        return self.COOKIE_STR
+    

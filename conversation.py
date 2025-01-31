@@ -44,11 +44,12 @@ def get_conversation_hrefs(conversation_elements):
 def get_conversation_id(conversation_href):
     return conversation_href.split('/')[-1]
 
-def download_conversations_data_from_tidio(config, conversation_hrefs):
+def download_conversations_data_from_tidio(config, conversation_hrefs, driver):
     for conversation_href in conversation_hrefs:
         conversation_id_key = get_conversation_id(conversation_href)
         download_url = make_download_url_from_conversation_id(config, conversation_id_key)
-        download_conversation_data_from_tidio(download_url)
+        print(f'Downloading conversation data from {download_url}')
+        download_conversation_data_from_tidio_with_requests(download_url, driver, config)
         
 def make_download_url_from_conversation_id(config, conversation_id_key):
     download_url_str = 'https://api-v2.tidio.com/conversations/export?api_token='
@@ -62,13 +63,67 @@ def make_download_url_from_conversation_id(config, conversation_id_key):
     download_url = f'{download_url_str}'
     return download_url
 
-def download_conversation_data_from_tidio(download_url):    
+def download_conversation_data_from_tidio_with_driver(download_url, driver):
+    prepare_data_dir()
+    # make hash from url
+    download_url_hash = hashlib.md5(download_url.encode()).hexdigest()
+    downloaded_filename = f'conversation_data_{download_url_hash}.csv'
+    # download conversation data as csv file
+    driver.get(download_url)
+    sleep(10)
+    
+    # save conversation data to csv file
+    file_path = DATA_DIR + '/' + downloaded_filename
+    with open(file_path, 'w') as f:
+        f.write(driver.page_source)
+    
+        
+def download_conversation_data_from_tidio(download_url):
     prepare_data_dir()
     # make hash from url
     download_url_hash = hashlib.md5(download_url.encode()).hexdigest()
     downloaded_filename = f'conversation_data_{download_url_hash}.csv'
     # download conversation data as csv file
     response = requests.get(download_url)
+    file_path = DATA_DIR + '/' + downloaded_filename
+    # save conversation data to csv file
+    with open(file_path, 'wb') as f:
+        f.write(response.content)
+
+def download_conversation_data_from_tidio_with_requests(download_url, driver, config):
+    prepare_data_dir()
+    # make hash from url
+    download_url_hash = hashlib.md5(download_url.encode()).hexdigest()
+    downloaded_filename = f'conversation_data_{download_url_hash}.csv'
+    # download conversation data as csv file
+    # get headers from driver
+    headers_request =  {
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Referer': 'https://www.tidio.com/',
+        'Trace-ID': driver.execute_script('return window.performance.getEntriesByType("navigation")[0].nextHopProtocol'),
+        'Origin': 'https://www.tidio.com',
+        'Connection': 'keep-alive',
+        'Cookie': config.get_cookie_str(),
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'Priority': 'u=0',
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache',
+        'TE': 'trailers'
+    }
+    cookies_request = driver.get_cookies()
+    # cookies_request to text map
+    cookies_request = {cookie['name']: cookie['value'] for cookie in cookies_request}
+    
+    # add authorization token to headers 
+    headers_request['api_token'] = 'mkfqkg5hpqgmelkeap4wvydgbbqolbmv'
+    # download conversation data as csv file
+    response = requests.get(download_url, headers=headers_request, cookies=cookies_request)
+    
     file_path = DATA_DIR + '/' + downloaded_filename
     # save conversation data to csv file
     with open(file_path, 'wb') as f:
@@ -86,7 +141,7 @@ def data_dir_has_merged_conversation_data_file():
 
 def merge_conversations_data_from_tidio():
     files_names = get_all_conversation_data_files_names()
-
+    count_messages = 0
     merdges_result = []
     for file_name in files_names:
         with open (DATA_DIR + '/' + file_name, 'r') as f:
@@ -98,7 +153,9 @@ def merge_conversations_data_from_tidio():
                 # convert row to associative array
                 row_dict = dict(zip(header, row))
                 row_dict['conversation_id'] = conversation_id
+                row_dict['message_id'] = count_messages
                 merdges_result.append(row_dict)
+                count_messages += 1
 
     return merdges_result
 
@@ -117,3 +174,12 @@ def save_merged_conversations_data_to_csv(merged_conversations_data):
 def get_all_conversation_data_files_names():
     files_names = os.listdir(DATA_DIR)
     return files_names
+
+def create_cookie(name, value):
+    return {
+        'name': name,
+        'value': value,
+        'domain': 'example.com',  # Update with the correct domain
+        'path': '/',
+        'expiry': None
+    }
