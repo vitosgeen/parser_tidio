@@ -8,7 +8,7 @@ def create_driver(config):
     options = webdriver.ChromeOptions()
     # options.add_argument('--disable-gpu')
     # options.add_argument('--disable-extensions')
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
 
     # add option current user data dir
     options.add_argument("--user-data-dir=" + config.get_user_data_dir())
@@ -18,9 +18,12 @@ def create_driver(config):
     # add download directory
     prefs = {
         "download.default_directory": config.get_user_download_dir(),
-        "download.prompt_for_download": False,
-        "download.directory_upgrade": True,
-        "safebrowsing.enabled": True
+        "download.prompt_for_download": False,  # Prevents the download pop-up
+        "download.directory_upgrade": True,  # Enables automatic directory updates
+        "safebrowsing.enabled": True,  # Prevents security pop-ups
+        "safebrowsing.disable_download_protection": True,  # Allow file downloads
+        "plugins.always_open_pdf_externally": True,  # Prevents opening PDFs in browser
+        "download.extensions_to_open": "application/csv", # Prevents opening CSVs in browser
     }
     options.add_experimental_option("prefs", prefs)
     driver = webdriver.Chrome(options=options)
